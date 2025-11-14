@@ -1,3 +1,5 @@
+package com.example.reservas.service.impl;
+
 import com.example.reservas.model.CrearReservaDTO;
 import com.example.reservas.model.EstadoReserva;
 import com.example.reservas.model.Reserva;
@@ -63,7 +65,7 @@ public class ReservaServiceImpl implements ReservaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + id));
 
         // 2. Aplicar lógica de negocio (no puedes cancelar algo ya cancelado o completado)
-        if (reserva.getEstado() == EstadoReserva.CANCELADA || reserva.getEstado() == EstadoReserva.COMPLETADA) {
+        if (reserva.getEstado() == EstadoReserva.CANCELADA || reserva.getEstado() == EstadoReserva.ACTIVA) {
             throw new IllegalStateException("La reserva ya está finalizada o cancelada.");
         }
 

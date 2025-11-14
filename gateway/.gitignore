@@ -31,6 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-
-# Configuración de FireBase para el login
-firebase_service_account.json

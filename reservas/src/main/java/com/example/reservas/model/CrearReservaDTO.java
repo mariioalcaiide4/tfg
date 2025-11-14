@@ -1,11 +1,15 @@
 package com.example.reservas.model;
 
+import java.time.Instant;
+
 import lombok.Data;
 
 @Data
 public class CrearReservaDTO {
     
+    private Long usuarioId;
     private Long claseId;
+    private Instant fechaReserva;
 
 }
 
