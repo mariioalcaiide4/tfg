@@ -21,7 +21,7 @@ public class Reserva {
     private Long id;
 
     @Column(name = "usuario_id", nullable = false)
-    private Long usuarioId; // ID del Usuario
+    private String usuarioId; // ID del Usuario
 
     @Column(name = "clase_id", nullable = false)
     private Long claseId; // ID de la Clase

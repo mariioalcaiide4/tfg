@@ -13,6 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/reservas")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class ReservaController {
 
     private final ReservaService reservaService;
@@ -38,7 +39,7 @@ public class ReservaController {
 
     // GET /api/reservas/usuario/5 (por ejemplo)
     @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<List<ReservaDTO>> obtenerReservasPorUsuario(@PathVariable Long usuarioId) {
+    public ResponseEntity<List<ReservaDTO>> obtenerReservasPorUsuario(@PathVariable String usuarioId) {
         return ResponseEntity.ok(reservaService.obtenerReservasPorUsuario(usuarioId));
     }
 

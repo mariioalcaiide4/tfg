@@ -7,7 +7,6 @@ import com.example.reservas.model.ReservaDTO;
 import com.example.reservas.repository.ReservaRepository;
 import com.example.reservas.service.ReservaMapper;
 import com.example.reservas.service.ReservaService;
-import com.example.reservas.util.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,22 +21,12 @@ public class ReservaServiceImpl implements ReservaService {
 
     private final ReservaRepository reservaRepository;
     private final ReservaMapper reservaMapper;
-    // Asumiremos que los repositorios de Usuario y Clase están en otros microservicios
-    // por lo que no validaremos si usuarioId o claseId existen aquí.
 
     @Override
     public ReservaDTO crearReserva(CrearReservaDTO crearReservaDTO) {
-        // 1. Convertir DTO de entrada a Entidad
         Reserva reserva = reservaMapper.crearDTOToEntity(crearReservaDTO);
-
-        // 2. Aplicar lógica de negocio (toda reserva nueva está PENDIENTE)
         reserva.setEstado(EstadoReserva.PENDIENTE);
-        // 'id' y 'fechaReserva' (si es @CreationTimestamp) se rellenan solos.
-
-        // 3. Guardar en la BD
         Reserva reservaGuardada = reservaRepository.save(reserva);
-
-        // 4. Devolver el DTO de salida
         return reservaMapper.toDTO(reservaGuardada);
     }
 
@@ -45,13 +34,14 @@ public class ReservaServiceImpl implements ReservaService {
     @Transactional(readOnly = true)
     public ReservaDTO obtenerReservaPorId(Long id) {
         Reserva reserva = reservaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + id));
+                .orElseThrow(() -> new RuntimeException("Reserva no encontrada con id: " + id));
         return reservaMapper.toDTO(reserva);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ReservaDTO> obtenerReservasPorUsuario(Long usuarioId) {
+    // CAMBIO CLAVE: Añadido el tipo String que faltaba
+    public List<ReservaDTO> obtenerReservasPorUsuario(String usuarioId) {
         List<Reserva> reservas = reservaRepository.findByUsuarioId(usuarioId);
         return reservas.stream()
                 .map(reservaMapper::toDTO)
@@ -60,19 +50,15 @@ public class ReservaServiceImpl implements ReservaService {
 
     @Override
     public ReservaDTO cancelarReserva(Long id) {
-        // 1. Encontrar la reserva
         Reserva reserva = reservaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + id));
+                .orElseThrow(() -> new RuntimeException("Reserva no encontrada con id: " + id));
 
-        // 2. Aplicar lógica de negocio (no puedes cancelar algo ya cancelado o completado)
-        if (reserva.getEstado() == EstadoReserva.CANCELADA || reserva.getEstado() == EstadoReserva.ACTIVA) {
-            throw new IllegalStateException("La reserva ya está finalizada o cancelada.");
+        if (reserva.getEstado() == EstadoReserva.CANCELADA) {
+            throw new IllegalStateException("La reserva ya está cancelada.");
         }
 
-        // 3. Cambiar estado y guardar
         reserva.setEstado(EstadoReserva.CANCELADA);
         Reserva reservaCancelada = reservaRepository.save(reserva);
-
         return reservaMapper.toDTO(reservaCancelada);
     }
 

@@ -6,7 +6,7 @@ import com.example.usuarios.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication; 
+// import org.springframework.security.core.Authentication; // <-- YA NO LO NECESITAS
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,9 +14,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/usuarios")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
+
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
+
 
     /**
      * Endpoint PÚBLICO para sincronizar un usuario de Firebase con nuestra BD.
@@ -27,50 +30,52 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevoUsuario);
     }
 
+    
     /**
-     * Endpoint PROTEGIDO. Devuelve el perfil del usuario que está haciendo la llamada.
+     * Nuevo endpoint para obtener usuario pasando el ID de Firebase en la URL.
+     * Url ejemplo: GET /api/usuarios/uid/56EdVKhtKpc058EIE84x0unodoJ3
      */
-    @GetMapping("/me")
-    public ResponseEntity<UsuarioDTO> getMiPerfil(Authentication authentication) {
-        String firebaseUid = authentication.getName(); 
+    @GetMapping("/uid/{firebaseUid}")
+    public ResponseEntity<UsuarioDTO> getUsuarioPorFirebaseUid(@PathVariable String firebaseUid) {
+        // Llamamos directamente al servicio con el String que nos llega
         UsuarioDTO usuario = usuarioService.obtenerUsuarioPorFirebaseUid(firebaseUid);
         return ResponseEntity.ok(usuario);
     }
 
+
     /**
      * Endpoint PROTEGIDO. Busca un usuario por su ID interno (Long).
+     * Url ejemplo: GET /api/usuarios/1
      */
+
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioDTO> getUsuarioPorId(@PathVariable Long id) {
         UsuarioDTO usuario = usuarioService.obtenerUsuarioPorId(id);
         return ResponseEntity.ok(usuario);
     }
 
+
     /**
-     * Endpoint PROTEGIDO (y deberías restringirlo solo a ADMINS).
+     * Endpoint para listar todos
      */
+
     @GetMapping
     public ResponseEntity<List<UsuarioDTO>> getTodosLosUsuarios() {
         return ResponseEntity.ok(usuarioService.obtenerTodos());
     }
 
-    // --- ENDPOINTS "MERGEADOS" (AÑADIDOS) ---
 
-    /**
-     * Endpoint PROTEGIDO. Busca usuarios por nombre.
-     * Ejemplo: GET /api/usuarios/buscar/nombre?q=Mariano
-     */
+    // --- BÚSQUEDAS ---
+
     @GetMapping("/buscar/nombre")
     public ResponseEntity<List<UsuarioDTO>> getUsuariosPorNombre(@RequestParam("q") String nombre) {
         return ResponseEntity.ok(usuarioService.obtenerPorNombre(nombre));
     }
 
-    /**
-     * Endpoint PROTEGIDO. Busca usuarios por estado (activo=true o activo=false).
-     * Ejemplo: GET /api/usuarios/buscar/estado?activo=true
-     */
+
     @GetMapping("/buscar/estado")
     public ResponseEntity<List<UsuarioDTO>> getUsuariosPorEstado(@RequestParam("activo") boolean activo) {
         return ResponseEntity.ok(usuarioService.obtenerPorEstadoActivo(activo));
     }
+
 }

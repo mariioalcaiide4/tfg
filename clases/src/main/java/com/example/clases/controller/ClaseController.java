@@ -12,6 +12,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/clases") // La URL base para todas las operaciones de clases
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
+
 public class ClaseController {
 
     private final ClaseService claseService;

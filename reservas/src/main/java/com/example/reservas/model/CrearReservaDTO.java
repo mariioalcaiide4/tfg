@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class CrearReservaDTO {
     
-    private Long usuarioId;
+    private String usuarioId;
     private Long claseId;
     private Instant fechaReserva;
 

@@ -21,7 +21,7 @@ public interface ReservaService {
     /**
      * Busca todas las reservas de un usuario.
      */
-    List<ReservaDTO> obtenerReservasPorUsuario(Long usuarioId);
+    List<ReservaDTO> obtenerReservasPorUsuario(String usuarioId);
 
     /**
      * Cancela una reserva (la marca como CANCELADA).

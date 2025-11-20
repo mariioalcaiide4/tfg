@@ -7,7 +7,7 @@ import lombok.Data;
 public class ReservaDTO {
     
     private Long id;
-    private Long usuarioId;
+    private String usuarioId;
     private Long claseId;
     private Instant fechaReserva;
     private EstadoReserva estado;

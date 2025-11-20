@@ -8,8 +8,8 @@ import com.example.reservas.model.Reserva;
 
 public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     
-    boolean existsByUsuarioIdAndClaseId(Long usuarioId, Long claseId);
+    boolean existsByUsuarioIdAndClaseId(String usuarioId, Long claseId);
 
-    List<Reserva> findByUsuarioId(Long usuarioId);
+    List<Reserva> findByUsuarioId(String usuarioId);
 
 }
