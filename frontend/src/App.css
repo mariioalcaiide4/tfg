@@ -1,0 +1,66 @@
+/* App.css */
+.home-container {
+  /* Ruta a tu imagen de fondo */
+  background-image: url('/src/assets/gim.jpg'); /* Asegúrate de que la ruta sea correcta */
+  background-size: cover; /* Cubre todo el área */
+  background-position: center; /* Centra la imagen */
+  background-repeat: no-repeat; /* No repetir */
+  min-height: 100vh; /* Altura mínima de toda la ventana */
+  display: flex; /* Usa flexbox para las columnas */
+  align-items: center; /* Centra verticalmente el contenido */
+  padding: 50px; /* Espacio alrededor del contenido */
+  color: #fff; /* Color de texto blanco para que resalte sobre el fondo oscuro */
+}
+
+.home-left-column {
+  flex: 1; /* Toma la mitad del espacio */
+  max-width: 600px; /* Ancho máximo para el contenido de texto */
+}
+
+.home-title {
+  font-size: 3rem; /* Tamaño grande para el título */
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.home-description {
+  font-size: 1.2rem;
+  margin-bottom: 30px;
+  line-height: 1.6; /* Altura de línea para mejor legibilidad */
+}
+
+.home-button {
+  /* Estilos para tu botón, usa los colores de tu marca */
+  background-color: #00ff6a; /* Ejemplo: naranja de Bildding */
+  color: white;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease; /* Transición suave al pasar el mouse */
+}
+
+.home-right-column {
+  flex: 1; /* Toma la otra mitad del espacio */
+  /* Se deja vacío como se solicitó */
+}
+
+/* Media query para dispositivos móviles */
+@media (max-width: 768px) {
+  .home-container {
+    flex-direction: column; /* Apila las columnas en vertical */
+    padding: 30px;
+    text-align: center; /* Centra el texto en móviles */
+  }
+
+  .home-left-column {
+    max-width: 100%; /* Ocupa todo el ancho disponible */
+    margin-bottom: 40px; /* Espacio debajo del contenido */
+  }
+
+  .home-right-column {
+    display: none; /* Oculta la columna derecha vacía en móviles */
+  }
+}

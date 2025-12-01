@@ -240,7 +240,7 @@ export default function Login() {
               component="h1"
               sx={{
                 fontWeight: 700,
-                color: "secondary.main",
+                color: "#00ff6a",
                 mb: 4,
               }}
             >

@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 
 // 1. Creamos el contexto (la nube de datos)
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 // 2. Creamos el Proveedor (el componente que envuelve a toda la app)
 export const AuthProvider = ({ children }) => {
