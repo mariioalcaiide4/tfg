@@ -3,6 +3,7 @@ package com.example.usuarios.model;
 import lombok.*;
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
@@ -21,6 +22,18 @@ public class Usuario {
     @Column(nullable = false, length = 120)
     private String nombre;
 
+    @Column(nullable = false, length = 120)
+    private String apellido;
+
+    @Column(nullable = false, length = 120)
+    private String direccion;
+    
+    @Column(nullable = false, length = 15)
+    private String telefono;
+
+    @Column(nullable = false)
+    private LocalDate fechaNacimiento;
+    
     @Column(nullable = false, unique = true, length = 180)
     private String email;
 

@@ -73,11 +73,13 @@ function HideOnScroll({ hasBanner = true, onMenuClick }) {
 	};
 
 	const handleLogout = () => {
-		logoutAuth();
-		sessionStorage.clear();
-		handleMenuClose();
-		setTimeout(() => navigate("/", { replace: true }), 0);
-	};
+        if (logout) logout(); 
+        
+        sessionStorage.clear();
+        handleMenuClose();
+        
+        setTimeout(() => navigate("/", { replace: true }), 0);
+    };
 
 	const handleAccount = () => {
 		handleMenuClose();

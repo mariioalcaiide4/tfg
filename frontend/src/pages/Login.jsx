@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // Añadido useEffect
 import {
   Dialog,
   DialogContent,
@@ -30,12 +30,12 @@ import { auth } from "../firebase-config";
 import { sincronizarUsuario } from "../services/api";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 
-
 const SlideTransition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-export default function Login() {
+// 1. ACEPTAMOS LAS PROPS (open, onClose, role) DEL NAVBAR
+export default function Login({ open, onClose, role }) {
 
   const [isLogin, setIsLogin] = useState(true);
   const [selectedRole, setSelectedRole] = useState("SOCIO");
@@ -44,13 +44,22 @@ export default function Login() {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [redirectMessage, setRedirectMessage] = useState("");
   const navigate = useNavigate();
-  const [open, setOpen] = useState(true);
+  
+  // ERROR ANTERIOR: Borramos "const [open, setOpen] = useState(true);" 
+  // porque ya viene 'open' en las props de arriba.
 
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     rememberMe: false,
   });
+
+  // 2. SINCRONIZAMOS EL ROL CUANDO EL NAVBAR LO MANDA
+  useEffect(() => {
+    if (role) {
+      setSelectedRole(role);
+    }
+  }, [role]);
 
   // Manejadores
   const handleChange = (e) => {
@@ -61,16 +70,25 @@ export default function Login() {
     }));
   };
 
+  // 3. USAMOS LA FUNCIÓN ONCLOSE DEL PADRE
   const handleClose = () => {
-    setOpen(false);
-    navigate('/'); // Te devuelve a la home suavemente
+    if (onClose) {
+        onClose(); 
+    } else {
+        // Fallback por si se usa el componente fuera del Navbar
+        navigate('/'); 
+    }
+  };
+
+  const handleRegistro = () => {
+    if (onClose) onClose(); // Cerramos el modal
+    navigate('/registro');  // Vamos a la página
   };
 
   const handleClickShowPassword = () => setShowPassword(!showPassword);
   const handleMouseDownPassword = (event) => event.preventDefault();
 
-  // --- LÓGICA DE SUBMIT (LOGIN Y REGISTRO) ---
-  
+  // --- LÓGICA DE SUBMIT ---
   const handleSubmit = async (event) => {
     event.preventDefault();
     setAuthError("");
@@ -78,43 +96,31 @@ export default function Login() {
     try {
       let userCredential;
       if (isLogin) {
-        
         userCredential = await signInWithEmailAndPassword(
           auth,
           formData.email,
           formData.password
         );
-        
         console.log("Usuario logueado:", userCredential.user);
-        // Aquí podrías verificar en tu BD si el rol coincide si fuera necesario
-      
       } else {
-        // --- REGISTRO ---
+        // (Tu lógica de registro existente...)
         userCredential = await createUserWithEmailAndPassword(
           auth,
           formData.email,
           formData.password
         );
-
         const user = userCredential.user;
-
-        console.log("Usuario creado en Firebase")
-
         await sincronizarUsuario({
             firebaseUid: user.uid,
             email: user.email,
-            nombre: user.email.split("@")[0], // Usamos la primera parte del correo como nombre provisional
-            rol: selectedRole, // 'SOCIO' o 'ENTRENADOR' (lo que hayas marcado en el Tab)
+            nombre: user.email.split("@")[0],
+            rol: selectedRole,
             activo: true
         });
-
-        console.log("Usuario creado en PostgreSQL")
       }
 
       const uid = userCredential.user.uid;
-
       localStorage.setItem("usuarioId", uid)
-
       setOpenSnackbar(true);
       
       setTimeout(() => {
@@ -124,9 +130,6 @@ export default function Login() {
 
     } catch (error) {
       console.error("Error auth:", error);
-      
-      // Mapeo básico de errores de Firebase a mensajes amigables
-      
       switch (error.code) {
         case "auth/email-already-in-use":
           setAuthError("El correo ya está registrado.");
@@ -148,17 +151,16 @@ export default function Login() {
     }
   };
 
-  // Función para alternar entre Login y Registro
   const toggleAuthState = () => {
     setIsLogin(!isLogin);
     setAuthError("");
-    setFormData({ ...formData, email: "", password: "" }); // Limpiar campos
+    setFormData({ ...formData, email: "", password: "" }); 
   };
 
   return (
     <>
       <Dialog
-        open={open}
+        open={open} // 4. AQUI USAMOS LA VARIABLE QUE VIENE DEL NAVBAR
         onClose={handleClose}
         maxWidth="md"
         fullWidth
@@ -202,29 +204,25 @@ export default function Login() {
                 right: 8,
                 top: 8,
                 color: "text.secondary",
-                "&:hover": {
-                  bgcolor: "rgba(0,0,0,0.04)",
-                },
+                "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
               }}
             >
               <CloseIcon />
             </IconButton>
 
-            {/* Icono (Cambia según si es Login o Registro) */}
+            {/* Icono */}
             <Box
               sx={{
                 width: 70,
                 height: 70,
                 borderRadius: "50%",
-                bgcolor: isLogin ? "primary.main" : "secondary.main", // Cambia color según modo
+                bgcolor: isLogin ? "primary.main" : "secondary.main",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 mb: 2,
                 transition: "all 0.3s ease",
-                "&:hover": {
-                  transform: "scale(1.05)",
-                },
+                "&:hover": { transform: "scale(1.05)" },
               }}
             >
               {isLogin ? (
@@ -234,29 +232,22 @@ export default function Login() {
               )}
             </Box>
 
-            {/* Título Dinámico */}
+            {/* Título */}
             <Typography
               variant="h4"
               component="h1"
-              sx={{
-                fontWeight: 700,
-                color: "#00ff6a",
-                mb: 4,
-              }}
+              sx={{ fontWeight: 700, color: "#00ff6a", mb: 4 }}
             >
               {isLogin ? "Iniciar Sesión" : "Crear Cuenta"}
             </Typography>
 
-            {/* Tabs de selección de rol */}
+            {/* Tabs */}
             <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
               <Tabs
                 value={selectedRole}
                 onChange={(_, newValue) => setSelectedRole(newValue)}
                 sx={{
-                  "& .MuiTab-root": {
-                    textTransform: "none",
-                    fontWeight: 500,
-                  },
+                  "& .MuiTab-root": { textTransform: "none", fontWeight: 500 },
                   "& .MuiTabs-indicator": {
                     backgroundColor: selectedRole === "SOCIO" ? "#003366" : "#FF6600",
                     height: "4px",
@@ -291,7 +282,7 @@ export default function Login() {
               </Alert>
             )}
 
-            {/* Caja del Formulario */}
+            {/* Formulario */}
             <Box
               sx={{
                 p: 4,
@@ -335,12 +326,7 @@ export default function Login() {
                         onClick={handleClickShowPassword}
                         onMouseDown={handleMouseDownPassword}
                         edge="end"
-                        sx={{
-                          color: "text.secondary",
-                          "&:hover": {
-                            bgcolor: "rgba(0,0,0,0.04)",
-                          },
-                        }}
+                        sx={{ color: "text.secondary" }}
                       >
                         {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
@@ -349,17 +335,7 @@ export default function Login() {
                 }}
               />
 
-              {/* Checkbox y Link de Olvidó contraseña */}
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 3,
-                  flexWrap: "wrap",
-                  gap: 1,
-                }}
-              >
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 1 }}>
                 <FormControlLabel
                   control={
                     <Checkbox
@@ -373,7 +349,6 @@ export default function Login() {
                 />
               </Box>
 
-              {/* Botón de Acción Principal (Login o Registro) */}
               <Button
                 fullWidth
                 type="submit"
@@ -383,9 +358,7 @@ export default function Login() {
                   color: "white",
                   py: 1.5,
                   fontSize: "1.1rem",
-                  "&:hover": {
-                    bgcolor: "secondary.dark",
-                  },
+                  "&:hover": { bgcolor: "secondary.dark" },
                   mb: 2,
                 }}
               >
@@ -403,42 +376,34 @@ export default function Login() {
                 </Typography>
               )}
 
-              {/* Toggle entre Login y Registro */}
+              {/* 5. LINK CORREGIDO */}
               <Box sx={{ textAlign: "center", mt: 2 }}>
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
                   {isLogin ? "Sin Loguear" : "¿Ya tienes una cuenta?"}{" "}
                   <Link
                     component="button"
                     type="button"
-                    onClick={toggleAuthState}
+                    onClick={handleRegistro} // Evento correcto
                     sx={{
                       color: "primary.main",
                       textDecoration: "none",
                       fontWeight: "bold",
-                      "&:hover": {
-                        textDecoration: "underline",
-                        color: "primary.dark",
-                      },
+                      "&:hover": { textDecoration: "underline", color: "primary.dark" },
                     }}
                   >
-                    {isLogin ? "Regístrate aquí" : "Inicia sesión"}
+                    {isLogin ? "Regístrate aquí" : "Inicia sesión"} 
                   </Link>
                 </Typography>
               </Box>
             </Box>
 
-            {/* Copyright */}
-            <Typography
-              variant="body2"
-              sx={{ color: "text.secondary", mt: 4, textAlign: "center" }}
-            >
+            <Typography variant="body2" sx={{ color: "text.secondary", mt: 4, textAlign: "center" }}>
               © {new Date().getFullYear()} TFG Mariano - Todos los derechos reservados.
             </Typography>
           </Box>
         </DialogContent>
       </Dialog>
 
-      {/* Snackbar de éxito */}
       <Snackbar
         open={openSnackbar}
         onClose={() => setOpenSnackbar(false)}
@@ -450,15 +415,9 @@ export default function Login() {
           onClose={() => setOpenSnackbar(false)}
           severity="success"
           variant="filled"
-          sx={{
-            width: "100%",
-            borderRadius: 2,
-            boxShadow: "0 6px 12px rgba(0,0,0,0.15)",
-          }}
+          sx={{ width: "100%", borderRadius: 2, boxShadow: "0 6px 12px rgba(0,0,0,0.15)" }}
         >
-          {isLogin 
-            ? "Sesión iniciada correctamente" 
-            : "Cuenta creada con éxito"}
+          {isLogin ? "Sesión iniciada correctamente" : "Cuenta creada con éxito"}
         </MuiAlert>
       </Snackbar>
     </>
