@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { crearReserva, obtenerClases, obtenerUsuarios } from '../services/api';
+import { crearReserva, obtenerClases, obtenerUsuarios, getMiPerfil } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 // --- CONSTANTES DE COLOR PARA EL TEMA NEÓN ---
 const NEON_GREEN = '#00ff6a';
@@ -12,9 +14,11 @@ const TEXT_WHITE = '#ffffff';
 const Reservar = () => {
   const navigate = useNavigate();
   const [clases, setClases] = useState([]);
+  const { user } = useAuth();
   const [loadingId, setLoadingId] = useState(null);
   const [loadingData, setLoadingData] = useState(true);
   const [usuarios, setUsuarios] = useState([]);
+  const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -26,6 +30,15 @@ const Reservar = () => {
 
         setClases(clasesData);
         setUsuarios(usuariosData);
+      if (user) {
+            try {
+                const perfil = await getMiPerfil();
+                setUserRole(perfil.rol);
+            } catch (err) {
+                console.error("Error cargando perfil", err);
+            }
+        }
+
       } catch (error) {
         console.error("Error cargando datos:", error);
       } finally {
@@ -34,7 +47,7 @@ const Reservar = () => {
     };
 
     fetchData();
-  }, []);
+  }, [user]);
 
   const getNombreEntrenador = (id) => {
       if (!usuarios.length) return "Cargando...";
@@ -133,14 +146,42 @@ const Reservar = () => {
                 </p>
               </div>
 
-              <button 
-                onClick={() => handleReservar(clase)}
-                disabled={loadingId === clase.id}
-                style={{
+              {userRole !== 'ENTRENADOR' && (
+                <button 
+                  onClick={() => handleReservar(clase)}
+                  disabled={loadingId === clase.id}
+                  style={{
+                    marginTop: "25px",
+                    padding: "15px",
+                    // Si carga: gris oscuro. Si no: Verde Neón.
+                    background: loadingId === clase.id ? "#333" : NEON_GREEN, 
+                    // Texto negro sobre fondo neón para máximo contraste
+                    color: loadingId === clase.id ? "#888" : "black", 
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "1.1rem",
+                    fontWeight: "900", // Extra negrita
+                    textTransform: "uppercase",
+                    cursor: loadingId === clase.id ? "not-allowed" : "pointer",
+                    transition: "all 0.3s ease-in-out",
+                    // Resplandor en el botón también
+                    boxShadow: loadingId === clase.id ? "none" : `0 0 15px ${NEON_GREEN}80`
+                  }}
+                >
+                  {loadingId === clase.id ? "Reservando..." : "Reservar Ahora"}
+                </button>
+              )}
+
+
+              <button
+                  variant="contained"
+                  size="small"
+                  color="secondary"
+                  style={{
                   marginTop: "25px",
                   padding: "15px",
                   // Si carga: gris oscuro. Si no: Verde Neón.
-                  background: loadingId === clase.id ? "#333" : NEON_GREEN, 
+                  background: loadingId === clase.id ? "#333" : "#FFFFFF", 
                   // Texto negro sobre fondo neón para máximo contraste
                   color: loadingId === clase.id ? "#888" : "black", 
                   border: "none",
@@ -153,22 +194,9 @@ const Reservar = () => {
                   // Resplandor en el botón también
                   boxShadow: loadingId === clase.id ? "none" : `0 0 15px ${NEON_GREEN}80`
                 }}
-              >
-                {loadingId === clase.id ? "Reservando..." : "Reservar Ahora"}
-              </button>
-
-              <button
-                  variant="contained"
-                  size="small"
-                  color="secondary"
-                  sx={{
-                    mt: 2,
-                    borderRadius: 2,
-                    fontSize: '1rem',
-                  }}
                   endIcon={<ChevronRightIcon />}
                   fullWidth
-                  onClick={() => navigate(`/projects/${clase.id}`)}
+                  onClick={() => navigate(`/clases/${clase.id}`)}
                 >
                   {"Ver detalles..."}
               </button>

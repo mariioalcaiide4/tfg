@@ -10,10 +10,10 @@ import {
 	MenuItem,
 } from "@mui/material";
 import { AccountCircle, Menu as MenuIcon } from "@mui/icons-material";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme, useMediaQuery } from "@mui/material";
 import { useTranslation } from "react-i18next";
+import { getMiPerfil } from "../services/api";
 import logo3 from "../assets/logo3.png";
 import { useAuth } from "../context/AuthContext";
 
@@ -25,6 +25,7 @@ function HideOnScroll({ hasBanner = true, onMenuClick }) {
 	const theme = useTheme();
 	const location = useLocation();
 	const { t } = useTranslation();
+	const [dbRole, setDbRole] = useState(null); // Estado para el rol real
 	
   const { user, logout } = useAuth();
 
@@ -32,10 +33,28 @@ function HideOnScroll({ hasBanner = true, onMenuClick }) {
 	const [isLoginOpen, setIsLoginOpen] = useState(false);
 	const [anchorEl, setAnchorEl] = useState(null); // Menú usuario logueado
 	const [anchorElAnon, setAnchorElAnon] = useState(null); // Menú anónimo
-	const [loginRole, setLoginRole] = useState("CLIENT");
+	const [loginRole, setLoginRole] = useState("SOCIO");
 
 	const isMenuOpen = Boolean(anchorEl);
 
+
+	useEffect(() => {
+        const fetchRole = async () => {
+            if (user) {
+                try {
+                    // Pedimos a la base de datos quién es este usuario realmente
+                    const perfil = await getMiPerfil();
+                    console.log("Rol obtenido en Navbar:", perfil.rol);
+                    setDbRole(perfil.rol); 
+                } catch (error) {
+                    console.error("Error cargando rol en navbar", error);
+                }
+            } else {
+                setDbRole(null);
+            }
+        };
+        fetchRole();
+    }, [user]);
 
 	// Efecto para abrir login desde URL params
 	useEffect(() => {
@@ -44,7 +63,7 @@ function HideOnScroll({ hasBanner = true, onMenuClick }) {
 		const roleParam = params.get("role");
 
 		if (shouldOpenLogin) {
-			if (roleParam === "BIDDER" || roleParam === "CLIENT") {
+			if (roleParam === "ENTRENADOR" || roleParam === "SOCIO") {
 				setLoginRole(roleParam);
 			}
 			setIsLoginOpen(true);
@@ -103,20 +122,20 @@ function HideOnScroll({ hasBanner = true, onMenuClick }) {
 					borderBottom: "1px solid #e0e0e0", // Borde sutil inferior
 					top: 0,
 					transition: "top 0.3s ease",
-          left: 0,
-          right: 0,
-          m: 0,
-          p: 0
-				}}
-			>
+					left: 0,
+					right: 0,
+					m: 0,
+					p: 0
+							}}
+						>
 				<Container maxWidth="xl">
 					<Toolbar disableGutters sx={{ 
-                px: 2, 
-                minHeight: { xs: '56px', md: '64px' }, // Altura estándar más compacta
-                height: { xs: '56px', md: '64px' },    // Fuerza la altura
-                display: 'flex',
-                alignItems: 'center'
-            }}>
+						px: 2, 
+						minHeight: { xs: '56px', md: '64px' }, // Altura estándar más compacta
+						height: { xs: '56px', md: '64px' },    // Fuerza la altura
+						display: 'flex',
+						alignItems: 'center'
+					}}>
 						
 						{/* --- IZQUIERDA: Logo + Menú hamburguesa --- */}
 						<Box sx={{ display: "flex", alignItems: "center" }}>
@@ -158,60 +177,39 @@ function HideOnScroll({ hasBanner = true, onMenuClick }) {
 								transform: "translateX(-50%)",
 								display: { xs: "none", sm: "flex" },
 								alignItems: "center",
-								gap: 1, // Espacio entre enlaces
+								gap: 1, 
 							}}
 						>
-							{user?.role !== "ENTRENADOR" && (
 								<Button
 									onClick={() => navigate("/reservar")}
 									sx={{
 										fontWeight: 400,
 										fontSize: "1rem",
-										textTransform: "none", // No mayúsculas
-										color: TEXT_COLOR,
-										"&:hover": { 
-											color: BRAND_ORANGE,
-											bgcolor: "transparent" // Sin fondo gris al hover
-										},
+										textTransform: "none",
+										color: "#333333",
+										"&:hover": { color: "#00ff6a", bgcolor: "transparent" },
 									}}
 								>
-									{"Clases"}
+									Clases
 								</Button>
-							)}
 
-							{user && user.role === "ENTRENADOR" && (
+							{/* BOTÓN 2: CREAR CLASE (Solo si la BD dice que eres ENTRENADOR) */}
+							{dbRole === "ENTRENADOR" && (
 								<Button
-									onClick={() => navigate("/bidder/cost")}
+									onClick={() => navigate("/crear")}
 									sx={{
-										fontWeight: 400,
+										fontWeight: 'bold',
 										fontSize: "1rem",
 										textTransform: "none",
-										color: TEXT_COLOR,
-										"&:hover": { 
-											color: BRAND_ORANGE, 
-											bgcolor: "transparent"
-										},
+										color: '#00ff6a',
+										border: '1px solid #00ff6a',
+										borderRadius: '20px',
+										px: 2,
+										ml: 2,
+										"&:hover": { bgcolor: "rgba(255, 102, 0, 0.1)" },
 									}}
 								>
-									{"account_serviceManage_price"}
-								</Button>
-							)}
-
-							{user && (user.role === "SOCIO" || user.role === "ENTRENADOR") && (
-								<Button
-									onClick={() => navigate("/dashboard")}
-									sx={{
-										fontWeight: 400,
-										fontSize: "1rem",
-										textTransform: "none",
-										color: TEXT_COLOR,
-										"&:hover": { 
-											color: BRAND_ORANGE,
-											bgcolor: "transparent"
-										},
-									}}
-								>
-									{t("account_title")}
+									+ Crear Clase
 								</Button>
 							)}
 						</Box>

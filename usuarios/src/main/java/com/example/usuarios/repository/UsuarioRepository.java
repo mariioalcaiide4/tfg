@@ -10,4 +10,5 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     List<Usuario> findByActivo (boolean activo);
     List<Usuario> findByNombre (String nombre);
     Optional<Usuario> findByFirebaseUid(String firebaseUid);
+    List<Usuario> findByFirebaseUidIn(List<String> firebaseUids);
 }

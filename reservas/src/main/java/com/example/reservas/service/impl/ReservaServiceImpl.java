@@ -10,6 +10,8 @@ import com.example.reservas.service.ReservaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.reservas.model.UsuarioDTO;
+import com.example.reservas.client.UsuarioClient;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,6 +23,7 @@ public class ReservaServiceImpl implements ReservaService {
 
     private final ReservaRepository reservaRepository;
     private final ReservaMapper reservaMapper;
+    private final UsuarioClient usuarioClient;
 
     @Override
     public ReservaDTO crearReserva(CrearReservaDTO crearReservaDTO) {
@@ -68,5 +71,20 @@ public class ReservaServiceImpl implements ReservaService {
         return reservaRepository.findAll().stream()
                 .map(reservaMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<UsuarioDTO> obtenerUsuariosPorClase(Long claseId) {
+    // 1. Sacamos las reservas de la BD local
+    List<Reserva> reservas = reservaRepository.findByClaseId(claseId);
+    
+    // 2. Extraemos los 'firebaseUid' (que guardaste en el campo usuarioId)
+    List<String> firebaseUids = reservas.stream()
+            .map(Reserva::getUsuarioId) // Esto devuelve Strings tipo "56EdVK..."
+            .distinct()
+            .collect(Collectors.toList());
+
+    // 3. Llamamos a Usuarios pasándole esos "firebaseUids"
+    return usuarioClient.obtenerUsuariosPorListaIds(firebaseUids);
     }
 }

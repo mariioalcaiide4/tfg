@@ -63,6 +63,12 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.obtenerTodos());
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<UsuarioDTO> updateUsuario(@PathVariable Long id, @RequestBody UsuarioDTO usuarioDTO) {
+        UsuarioDTO updatedUsuario = usuarioService.actualizarUsuario(id, usuarioDTO);
+        return ResponseEntity.ok(updatedUsuario);
+    }
+
 
     // --- BÚSQUEDAS ---
 
@@ -75,6 +81,16 @@ public class UsuarioController {
     @GetMapping("/buscar/estado")
     public ResponseEntity<List<UsuarioDTO>> getUsuariosPorEstado(@RequestParam("activo") boolean activo) {
         return ResponseEntity.ok(usuarioService.obtenerPorEstadoActivo(activo));
+    }
+
+    @PostMapping("/batch")
+    public ResponseEntity<List<UsuarioDTO>> obtenerUsuariosPorListaIds(@RequestBody List<String> ids) {
+        
+        // Llamamos al servicio para que busque todos esos IDs
+        List<UsuarioDTO> usuarios = usuarioService.listarUsuariosPorIds(ids);
+        
+        // Devolvemos la lista (aunque esté vacía, devolvemos 200 OK y lista vacía [])
+        return ResponseEntity.ok(usuarios);
     }
 
 }

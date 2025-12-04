@@ -140,7 +140,74 @@ export const updateClase = async (id, datosActualizados) => {
 // Obtener lista de inscritos (Necesitas este endpoint en tu backend)
 // Si no lo tienes, el frontend fallará al intentar cargar la tabla.
 export const getUsuariosPorClase = async (claseId) => {
-    const response = await fetch(`${GATEWAY_URL}/reservas/clase/${claseId}/usuarios`);
-    if (!response.ok) return []; // Retornamos array vacío si falla o no existe
+    // Esta ruta debe estar abierta en Spring Security (.permitAll())
+    // O bien, el usuario debe tener ROL_ENTRENADOR y Token válido
+    const response = await fetch(`${GATEWAY_URL}/reservas/clase/${claseId}/usuarios`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        }     
+    });
+    
+    if (!response.ok) {
+        // Si devuelve 403 o 401, es probable que la seguridad no esté bien configurada
+        throw new Error('Error al obtener usuarios inscritos');
+    }
+    return await response.json();
+};
+
+export const createClase = async (claseData) => {
+    try {
+        const response = await fetch(`${GATEWAY_URL}/clases`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // Si tu backend usa seguridad JWT, descomenta la siguiente línea:
+                // 'Authorization': `Bearer ${localStorage.getItem('token')}` 
+            },
+            body: JSON.stringify(claseData)
+        });
+
+        if (!response.ok) {
+            // Intentamos leer el error que devuelve el servidor
+            const errorMsg = await response.text();
+            throw new Error(errorMsg || 'Error al conectar con el servidor');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Error en createClase:", error);
+        throw error; // Lanzamos el error para que el componente (CrearClase.jsx) muestre el alert
+    }
+};
+
+export const deleteClase = async (id) => {
+    const response = await fetch(`${GATEWAY_URL}/clases/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            // 'Authorization': `Bearer ${token}` // Si usas seguridad
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error('Error al eliminar la clase');
+    }
+    // Si el backend no devuelve nada (204 No Content), devolvemos true
+    return true;
+};
+
+export const updateUsuario = async (id, usuarioData) => {
+    const response = await fetch(`${GATEWAY_URL}/usuarios/${id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(usuarioData)
+    });
+
+    if (!response.ok) {
+        throw new Error('Error al actualizar perfil de usuario');
+    }
     return await response.json();
 };

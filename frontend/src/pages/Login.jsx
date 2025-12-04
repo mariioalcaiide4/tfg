@@ -82,7 +82,7 @@ export default function Login({ open, onClose, role }) {
 
   const handleRegistro = () => {
     if (onClose) onClose(); // Cerramos el modal
-    navigate('/registro');  // Vamos a la página
+    navigate('/registro', { state: { role: selectedRole } });  
   };
 
   const handleClickShowPassword = () => setShowPassword(!showPassword);
@@ -173,6 +173,7 @@ export default function Login({ open, onClose, role }) {
             maxWidth: 540,
             width: "100%",
             maxHeight: "95vh",
+            backgroundColor: "#121212",
           },
         }}
         sx={{
@@ -261,7 +262,7 @@ export default function Login({ open, onClose, role }) {
                   label="Socio"
                   value="SOCIO"
                   sx={{
-                    color: selectedRole === "SOCIO" ? "#003366 !important" : "rgba(0,51,102,0.5) !important",
+                    color: selectedRole === "SOCIO" ? "#00ff6a !important" : "rgba(0,51,102,0.5) !important",
                     transition: "color 0.3s ease",
                   }}
                 />
@@ -383,7 +384,7 @@ export default function Login({ open, onClose, role }) {
                   <Link
                     component="button"
                     type="button"
-                    onClick={handleRegistro} // Evento correcto
+                    onClick={handleRegistro}
                     sx={{
                       color: "primary.main",
                       textDecoration: "none",

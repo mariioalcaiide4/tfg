@@ -1,25 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; 
-import { getClaseById, updateClase, getUsuariosPorClase } from '../services/api';
+import { getClaseById, updateClase, getUsuariosPorClase, getMiPerfil } from '../services/api';
 
 // --- ESTÉTICA NEÓN ---
 const NEON_GREEN = '#00ff6a';
+const NEON_ORANGE = '#00ff6a'; // FALTABA ESTA CONSTANTE
 const DARK_BG = '#121212';
 const INPUT_BG = '#1e1e1e';
 const TEXT_WHITE = '#ffffff';
 
 const ClaseDetails = () => {
-  const { id } = useParams(); // Obtenemos el ID de la URL
-  const { user } = useAuth(); // Obtenemos el usuario logueado
+  const { id } = useParams(); 
+  const { user } = useAuth(); 
   const navigate = useNavigate();
 
   const [clase, setClase] = useState(null);
-  const [inscritos, setInscritos] = useState([]); // Lista de usuarios (Solo entrenador)
+  const [inscritos, setInscritos] = useState([]); 
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false); // Modo edición
+  const [isEditing, setIsEditing] = useState(false); 
+  
+  // Estado para saber si soy el dueño real (tras comprobar ID de SQL)
+  const [esDuenio, setEsDuenio] = useState(false);
 
-  // Estado para el formulario
   const [formData, setFormData] = useState({
       nombre: '',
       categoria: '',
@@ -32,25 +35,42 @@ const ClaseDetails = () => {
   useEffect(() => {
     const cargarDatos = async () => {
       try {
-        // 1. Cargar la clase
-        const data = await getClaseById(id);
-        setClase(data);
+        setLoading(true);
+
+        // 1. Cargamos la CLASE
+        const claseData = await getClaseById(id);
+        setClase(claseData);
         
-        // Preparamos el form (convertir fecha para input datetime-local)
         setFormData({
-            nombre: data.nombre,
-            categoria: data.categoria,
-            tipo: data.tipo,
-            // Truco para input date: cortar los milisegundos si vienen
-            fechaInicio: data.fechaInicio ? data.fechaInicio.substring(0, 16) : '', 
-            duracionMin: data.duracionMin || 60,
-            capacidadMaxima: data.capacidadMaxima
+            nombre: claseData.nombre,
+            categoria: claseData.categoria,
+            tipo: claseData.tipo,
+            fechaInicio: claseData.fechaInicio ? claseData.fechaInicio.substring(0, 16) : '', 
+            duracionMin: claseData.duracionMin || 60,
+            capacidadMaxima: claseData.capacidadMaxima
         });
 
-        // 2. Si es ENTRENADOR, cargar los inscritos
-        if (user && user.rol === 'ENTRENADOR') {
-            const usersData = await getUsuariosPorClase(id);
-            setInscritos(usersData);
+        // 2. Cargamos MI PERFIL (para saber mi ID SQL y comparar)
+        if (user) {
+            try {
+                const miPerfil = await getMiPerfil();
+                
+                // COMPROBACIÓN MAESTRA (Usamos '==' para evitar problemas de tipos string/number)
+                const soyElJefe = miPerfil.rol === 'ADMIN' || 
+                                 (miPerfil.rol === 'ENTRENADOR' && miPerfil.id == claseData.entrenadorId);
+                
+                setEsDuenio(soyElJefe);
+                console.log("¿Es dueño?", soyElJefe);
+
+                // 3. Si soy el jefe, cargamos la lista de asistencia
+                if (soyElJefe) {
+                    const usuariosData = await getUsuariosPorClase(id);
+                    setInscritos(usuariosData);
+                }
+
+            } catch (err) {
+                console.error("Error comprobando permisos o cargando inscritos", err);
+            }
         }
 
       } catch (error) {
@@ -60,7 +80,10 @@ const ClaseDetails = () => {
         setLoading(false);
       }
     };
-    cargarDatos();
+    
+    if (user) { 
+        cargarDatos();
+    }
   }, [id, user]);
 
   const handleChange = (e) => {
@@ -69,21 +92,28 @@ const ClaseDetails = () => {
 
   const handleSave = async () => {
       try {
-          await updateClase(id, formData);
+          // Aseguramos formato ISO para la fecha
+          const dataToSend = {
+            ...clase, 
+            ...formData,
+             fechaInicio: new Date(formData.fechaInicio).toISOString()
+          };
+
+          await updateClase(id, dataToSend);
           alert("✅ Clase actualizada correctamente");
           setIsEditing(false);
-          // Recargamos los datos visuales
-          setClase({ ...clase, ...formData });
+          // Recargamos datos visuales
+          setClase(dataToSend);
       } catch (error) {
+          console.error(error);
           alert("❌ Error al guardar");
       }
   };
 
   if (loading) return <div style={{ background: DARK_BG, minHeight: '100vh', color: NEON_GREEN, paddingTop: '100px', textAlign: 'center' }}>Cargando...</div>;
+  if (!clase) return null;
 
-  const esEntrenador = user?.rol === 'ENTRENADOR';
-
-  // Estilos de Inputs
+  // Estilos
   const inputStyle = {
       background: INPUT_BG,
       border: `1px solid ${NEON_GREEN}`,
@@ -95,7 +125,6 @@ const ClaseDetails = () => {
       fontFamily: 'monospace'
   };
 
-  // Estilos de Etiquetas (Read-only)
   const labelStyle = {
       display: 'block',
       color: NEON_GREEN,
@@ -114,27 +143,32 @@ const ClaseDetails = () => {
 
   return (
     <div style={{ background: DARK_BG, minHeight: 'calc(100vh - 64px)', padding: '40px', paddingTop: '100px', color: TEXT_WHITE }}>
-      
+
+    <br></br>
+
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
         
         {/* CABECERA */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-            <h1 style={{ color: NEON_GREEN, textShadow: `0 0 10px ${NEON_GREEN}` }}>
+            <h1 style={{ 
+                color: esDuenio ? NEON_ORANGE : NEON_GREEN, 
+                textShadow: `0 0 10px ${esDuenio ? NEON_ORANGE : NEON_GREEN}` 
+            }}>
                 {isEditing ? 'Editar Clase' : clase.nombre}
             </h1>
             
-            {esEntrenador && !isEditing && (
+            {esDuenio && !isEditing && (
                 <button 
                     onClick={() => setIsEditing(true)}
-                    style={{ background: 'transparent', border: `1px solid ${NEON_GREEN}`, color: NEON_GREEN, padding: '10px 20px', cursor: 'pointer', borderRadius: '5px' }}
+                    style={{ background: 'transparent', border: `1px solid ${NEON_ORANGE}`, color: NEON_ORANGE, padding: '10px 20px', cursor: 'pointer', borderRadius: '5px' }}
                 >
-                    🔧 EDITAR DATOS
+                    GESTIONAR
                 </button>
             )}
         </div>
 
         {/* FORMULARIO / VISTA DETALLE */}
-        <div style={{ background: '#000', padding: '30px', borderRadius: '15px', border: `1px solid ${NEON_GREEN}`, boxShadow: `0 0 20px ${NEON_GREEN}20` }}>
+        <div style={{ background: '#000', padding: '30px', borderRadius: '15px', border: `1px solid ${esDuenio ? NEON_ORANGE : NEON_GREEN}`, boxShadow: `0 0 20px ${esDuenio ? NEON_ORANGE : NEON_GREEN}20` }}>
             
             {/* NOMBRE */}
             <div>
@@ -198,10 +232,10 @@ const ClaseDetails = () => {
                 </div>
             </div>
 
-            {/* BOTONES DE GUARDAR (SOLO EDICIÓN) */}
+            {/* BOTONES DE GUARDAR */}
             {isEditing && (
                 <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
-                    <button onClick={handleSave} style={{ flex: 1, background: NEON_GREEN, color: 'black', border: 'none', padding: '15px', fontWeight: 'bold', cursor: 'pointer', borderRadius: '5px' }}>
+                    <button onClick={handleSave} style={{ flex: 1, background: NEON_ORANGE, color: 'white', border: 'none', padding: '15px', fontWeight: 'bold', cursor: 'pointer', borderRadius: '5px' }}>
                         GUARDAR CAMBIOS
                     </button>
                     <button onClick={() => setIsEditing(false)} style={{ flex: 1, background: '#333', color: 'white', border: 'none', padding: '15px', fontWeight: 'bold', cursor: 'pointer', borderRadius: '5px' }}>
@@ -211,31 +245,36 @@ const ClaseDetails = () => {
             )}
         </div>
 
-        {/* --- SECCIÓN INFERIOR: TABLA DE USUARIOS (SOLO ENTRENADOR) --- */}
-        {esEntrenador && (
+        {/* --- LISTA DE ASISTENCIA --- */}
+        {esDuenio && (
             <div style={{ marginTop: '50px' }}>
-                <h2 style={{ color: NEON_GREEN, marginBottom: '20px' }}>📋 Lista de Asistencia</h2>
+                <h2 style={{ color: NEON_ORANGE, marginBottom: '20px', borderBottom: `2px solid ${NEON_ORANGE}`, paddingBottom: '10px' }}>
+                    ASISTENCIA ({inscritos.length}/{clase.capacidadMaxima})
+                </h2>
                 
                 {inscritos.length === 0 ? (
-                    <p style={{ color: '#888' }}>Aún no hay usuarios inscritos en esta clase.</p>
+                    <p style={{ color: '#888', fontStyle: 'italic' }}>Aún no hay socios apuntados a esta clase.</p>
                 ) : (
                     <table style={{ width: '100%', borderCollapse: 'collapse', color: 'white' }}>
                         <thead>
-                            <tr style={{ borderBottom: `2px solid ${NEON_GREEN}` }}>
-                                <th style={{ textAlign: 'left', padding: '10px', color: NEON_GREEN }}>ID Usuario</th>
-                                <th style={{ textAlign: 'left', padding: '10px', color: NEON_GREEN }}>Nombre</th>
-                                <th style={{ textAlign: 'left', padding: '10px', color: NEON_GREEN }}>Email</th>
-                                <th style={{ textAlign: 'left', padding: '10px', color: NEON_GREEN }}>Fecha Inscripción</th>
+                            <tr style={{ background: '#1a1a1a' }}>
+                                <th style={{ textAlign: 'left', padding: '15px', color: NEON_ORANGE }}>Nombre</th>
+                                <th style={{ textAlign: 'left', padding: '15px', color: NEON_ORANGE }}>Email</th>
+                                <th style={{ textAlign: 'left', padding: '15px', color: NEON_ORANGE }}>Estado</th>
                             </tr>
                         </thead>
                         <tbody>
                             {inscritos.map((usuario, index) => (
-                                <tr key={index} style={{ borderBottom: '1px solid #333' }}>
-                                    {/* Ajusta estos campos según lo que devuelva tu backend */}
-                                    <td style={{ padding: '10px' }}>{usuario.id}</td>
-                                    <td style={{ padding: '10px' }}>{usuario.nombre}</td>
-                                    <td style={{ padding: '10px' }}>{usuario.email}</td>
-                                    <td style={{ padding: '10px' }}>{new Date().toLocaleDateString()}</td> 
+                                <tr key={usuario.id || index} style={{ borderBottom: '1px solid #333' }}>
+                                    <td style={{ padding: '15px' }}>
+                                        {usuario.nombre} {usuario.apellido}
+                                    </td>
+                                    <td style={{ padding: '15px', color: '#aaa' }}>{usuario.email}</td>
+                                    <td style={{ padding: '15px' }}>
+                                        <span style={{ color: NEON_GREEN, border: `1px solid ${NEON_GREEN}`, padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>
+                                            CONFIRMADO
+                                        </span>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>

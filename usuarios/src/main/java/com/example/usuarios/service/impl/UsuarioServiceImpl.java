@@ -90,4 +90,59 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .map(usuarioMapper::toDTO)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<UsuarioDTO> listarUsuariosPorIds(List<String> firebaseUids) {
+        // 1. Buscamos los usuarios usando los UIDs de Firebase
+        List<Usuario> usuarios = usuarioRepository.findByFirebaseUidIn(firebaseUids);
+
+        // 2. Convertimos a DTO (Aquí se rellenan el nombre y apellido)
+        return usuarios.stream()
+                .map(usuario -> {
+                    UsuarioDTO dto = new UsuarioDTO();
+                    // Mapeamos los datos que queremos mostrar
+                    dto.setId(usuario.getId());
+                    dto.setNombre(usuario.getNombre());
+                    dto.setApellido(usuario.getApellido());
+                    dto.setEmail(usuario.getEmail());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public UsuarioDTO actualizarUsuario(Long id, UsuarioDTO usuarioDTO) {
+        
+        Usuario usuarioExistente = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id (BD): " + id));
+
+        // El frontend solo envía los campos que se pueden editar.
+        // Actualizamos la entidad existente con los datos del DTO.
+        
+        // NOTA: Asumimos que los campos del DTO (nombre, telefono, etc.) corresponden a los campos de la entidad.
+        if (usuarioDTO.getNombre() != null) {
+            usuarioExistente.setNombre(usuarioDTO.getNombre());
+        }
+        if (usuarioDTO.getApellido() != null) {
+            usuarioExistente.setApellido(usuarioDTO.getApellido());
+        }
+        if (usuarioDTO.getTelefono() != null) {
+            usuarioExistente.setTelefono(usuarioDTO.getTelefono());
+        }
+        if (usuarioDTO.getDireccion() != null) {
+            usuarioExistente.setDireccion(usuarioDTO.getDireccion());
+        }
+        
+        // La fecha de nacimiento la recibimos como String YYYY-MM-DD
+        if (usuarioDTO.getFechaNacimiento() != null) {
+            usuarioExistente.setFechaNacimiento(usuarioDTO.getFechaNacimiento());
+        }
+        
+        // El email y el rol NO se deben actualizar desde aquí.
+
+        Usuario usuarioActualizado = usuarioRepository.save(usuarioExistente);
+        
+        // Devolvemos el DTO completo para actualizar la vista en el frontend
+        return usuarioMapper.toDTO(usuarioActualizado);
+    }
 }

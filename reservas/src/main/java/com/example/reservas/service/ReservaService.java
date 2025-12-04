@@ -2,6 +2,8 @@ package com.example.reservas.service;
 
 import com.example.reservas.model.CrearReservaDTO;
 import com.example.reservas.model.ReservaDTO;
+import com.example.reservas.model.UsuarioDTO;
+
 import java.util.List;
 
 public interface ReservaService {
@@ -32,4 +34,7 @@ public interface ReservaService {
      * Obtiene todas las reservas (para un admin, por ejemplo).
      */
     List<ReservaDTO> obtenerTodasLasReservas();
+
+    List<UsuarioDTO> obtenerUsuariosPorClase(Long claseId);
+
 }

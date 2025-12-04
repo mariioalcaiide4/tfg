@@ -2,6 +2,7 @@ package com.example.reservas.controller;
 
 import com.example.reservas.model.CrearReservaDTO;
 import com.example.reservas.model.ReservaDTO;
+import com.example.reservas.model.UsuarioDTO;
 import com.example.reservas.service.ReservaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -41,6 +42,16 @@ public class ReservaController {
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<ReservaDTO>> obtenerReservasPorUsuario(@PathVariable String usuarioId) {
         return ResponseEntity.ok(reservaService.obtenerReservasPorUsuario(usuarioId));
+    }
+
+    // GET http://localhost:8082/api/reservas/clase/{claseId}/usuarios
+    @GetMapping("/clase/{claseId}/usuarios")
+    public ResponseEntity<List<UsuarioDTO>> obtenerUsuariosPorClase(@PathVariable Long claseId) {
+        
+        // Llamamos al servicio (que ahora hace la magia con Feign)
+        List<UsuarioDTO> usuarios = reservaService.obtenerUsuariosPorClase(claseId);
+        
+        return ResponseEntity.ok(usuarios);
     }
 
     // PATCH /api/reservas/1/cancelar

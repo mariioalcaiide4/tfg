@@ -40,4 +40,12 @@ public interface UsuarioService {
      * Busca usuarios que están activos o inactivos.
      */
     List<UsuarioDTO> obtenerPorEstadoActivo(boolean activo);
+
+    
+    List<UsuarioDTO> listarUsuariosPorIds(List<String> ids); 
+
+    UsuarioDTO actualizarUsuario(Long id, UsuarioDTO usuarioDTO);
+
+
+
 }

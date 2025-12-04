@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom'; 
 import { 
     Box, Container, Paper, Typography, TextField, Button, Stack, 
     Divider, IconButton, InputAdornment, Alert, CircularProgress 
@@ -10,15 +10,19 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 
 import { auth } from '../firebase-config'; 
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-// ----------------------------------------------------------
 
 const RegisterPage = () => {
     const navigate = useNavigate();
+    const location = useLocation(); 
+    
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // Estado inicial
+    // 1. Recuperamos el rol del estado (que viene del Login) o SOCIO por defecto
+    
+    const [role, setRole] = useState("SOCIO");
+    
     const [formData, setFormData] = useState({
         nombre: '',
         apellido: '',
@@ -29,6 +33,14 @@ const RegisterPage = () => {
         fechaNacimiento: '' 
     });
 
+    
+    useEffect(() => {
+    // Si hay un estado en la navegación y tiene la propiedad role...
+        if (location.state && location.state.role) {
+        setRole(location.state.role);
+        }
+    }, [location]);
+    
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -39,43 +51,41 @@ const RegisterPage = () => {
         setError('');
 
         try {
-            // 1. PRIMERO: Creamos el usuario en Firebase Authentication
+            // A. Firebase Auth
             const userCredential = await createUserWithEmailAndPassword(
                 auth, 
                 formData.email, 
                 formData.password
             );
             
-            // Obtenemos el UID que nos da Firebase (ej: "56EdV...")
             const firebaseUid = userCredential.user.uid;
 
-            // 2. SEGUNDO: Preparamos los datos para Spring Boot
-            // OJO: No enviamos la contraseña al backend, no la necesita.
+            // B. Preparar datos para Spring Boot
             const userForBackend = {
                 nombre: formData.nombre,
                 apellido: formData.apellido,
                 email: formData.email,
                 telefono: formData.telefono,
                 direccion: formData.direccion,
-                fechaNacimiento: formData.fechaNacimiento, // Formato YYYY-MM-DD
-                firebaseUid: firebaseUid, // ¡La clave de la sincronización!
-                rol: "SOCIO" // O el rol que quieras por defecto
+                fechaNacimiento: formData.fechaNacimiento, 
+                firebaseUid: firebaseUid,
+                rol: role, 
+                activo: true
             };
 
-            // 3. TERCERO: Guardamos en PostgreSQL llamando a tu API
-            const response = await fetch('http://localhost:8084/api/usuarios/sincronizar', { // Revisa tu puerto y endpoint
+            // C. Guardar en PostgreSQL VÍA GATEWAY (8084)
+            const response = await fetch('http://localhost:8084/api/usuarios/sincronizar', { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(userForBackend)
             });
 
             if (response.ok) {
-                // ¡Todo perfecto! Redirigimos al Login o al Home
-                navigate('/login'); 
+                // Si todo va bien, volvemos al login
+                navigate('/'); 
             } else {
                 const errorText = await response.text();
                 setError('Error en el servidor: ' + errorText);
-                // Opcional: Aquí podrías borrar el usuario de Firebase si falla el backend para no dejar basura.
             }
 
         } catch (err) {
@@ -94,7 +104,9 @@ const RegisterPage = () => {
         <Box sx={{ 
             minHeight: '100vh', 
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+            bgcolor: '#121212',
+            color: '#FFFFFF',
+            background: 'linear-gradient(135deg, #00ff6a 0%, #91959bff 100%)',
             py: 4 
         }}>
             <Container maxWidth="md">
@@ -103,7 +115,7 @@ const RegisterPage = () => {
                     <Box sx={{ textAlign: 'center', mb: 3 }}>
                         <PersonAddIcon color="primary" sx={{ fontSize: 50 }} />
                         <Typography variant="h4" fontWeight="bold" color="primary">
-                            Crear Cuenta
+                            CREAR CUENTA DE <span style={{color: role === 'ENTRENADOR' ? '#121212' : '#00ff6a'}}>{role}</span> 
                         </Typography>
                     </Box>
 
@@ -111,20 +123,16 @@ const RegisterPage = () => {
 
                     <form onSubmit={handleSubmit}>
                         <Stack spacing={2}>
-                            
-                            {/* Nombre y Apellidos */}
                             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                                 <TextField fullWidth label="Nombre" name="nombre" onChange={handleChange} required />
                                 <TextField fullWidth label="Apellido" name="apellido" onChange={handleChange} required />
                             </Stack>
 
-                            {/* Datos de Contacto */}
                             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                                 <TextField fullWidth label="Email" name="email" type="email" onChange={handleChange} required />
                                 <TextField fullWidth label="Teléfono" name="telefono" onChange={handleChange} required />
                             </Stack>
 
-                            {/* Datos Personales */}
                             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                                 <TextField fullWidth label="Dirección" name="direccion" onChange={handleChange} required />
                                 <TextField 
@@ -140,7 +148,6 @@ const RegisterPage = () => {
 
                             <Divider sx={{ my: 1 }} />
 
-                            {/* Contraseña */}
                             <TextField
                                 fullWidth
                                 label="Contraseña"
@@ -174,7 +181,7 @@ const RegisterPage = () => {
 
                     <Box sx={{ mt: 3, textAlign: 'center' }}>
                         <Typography variant="body2">
-                            ¿Ya tienes cuenta? <Link to="/login" style={{ textDecoration: 'none', fontWeight: 'bold', color: '#1976d2' }}>Inicia sesión</Link>
+                            ¿Ya tienes cuenta? <Link to="/" style={{ textDecoration: 'none', fontWeight: 'bold', color: '#1976d2' }}>Inicia sesión</Link>
                         </Typography>
                     </Box>
 

@@ -9,6 +9,8 @@ import RegisterPage  from './pages/RegisterPage';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Reservar from './pages/Reservar';
+import ClaseDetails from './pages/ClaseDetails';
+import CrearClase from './pages/CrearClase';
 
 function App() {
   return (
@@ -23,6 +25,8 @@ function App() {
             <Route path="/registro" element={<RegisterPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/reservar" element={<Reservar />} />
+            <Route path="/clases/:id" element={<ClaseDetails/>} />
+            <Route path="/crear" element={<CrearClase/>} />
           </Routes>
         </div>
       </Router>
